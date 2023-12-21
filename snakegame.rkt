@@ -5,6 +5,22 @@
 (require 2htdp/universe)
 
 
+; data definitions
+
+(define-struct snake-game [snake food])
+; A SnakeGame is a [ListOfPoints Point]
+; It consists of a ListOfPoints that describes a snake and another point that
+; indicates the location of food
+#;
+(define (fn-on-snake-game snake-game)
+  ... (fn-on-snake snake-game-snake) ... (fn-on-point snake-game-food))
+
+(define-struct point [x y])
+; A Point is a [N N]
+; It consists of two natural numbers that correspond to x and y coordunates
+#;
+(define (fn-on-point p)
+  ... (point-x p) ... (point-y p))
 
 ; constants
 
@@ -14,6 +30,8 @@
 (define CURVATURE 4)
 (define PULLBACK (- SEGMENTSIZE CURVATURE CURVATURE))
 (define SPACER 1)
+(define CANVASWIDTH (* 80 (+ SEGMENTSIZE SPACER)))
+(define CANVASHEIGHT (* 45 (+ SEGMENTSIZE SPACER)))
 (define SNAKESEGMENT
   (beside
    (rectangle SPACER SEGMENTSIZE "solid" BACKGROUNDCOLOR)
@@ -30,9 +48,56 @@
         (overlay
          (rectangle SEGMENTSIZE PULLBACK "solid" SNAKECOLOR)
          (rectangle PULLBACK SEGMENTSIZE "solid" SNAKECOLOR)))))))))
+(define CANVAS (empty-scene CANVASWIDTH CANVASHEIGHT BACKGROUNDCOLOR))
 
 
-(beside (above SNAKESEGMENT SNAKESEGMENT SNAKESEGMENT)
-        (above SNAKESEGMENT SNAKESEGMENT SNAKESEGMENT)
-        (above SNAKESEGMENT SNAKESEGMENT SNAKESEGMENT))
 
+; functions
+
+
+(define (main sg)
+  ; SnakeGame -> SnakeGame
+  ; run the game
+  (big-bang sg
+    [on-tick update-game]
+    [to-draw render-game]
+    [on-key turn-snake]
+    [stop-when crashed? render-game]))
+
+
+(define (update-game sg)
+  ; !!!
+  ; SnakeGame -> SnakeGame
+  ; move the snake and make food appear
+  sg)
+
+
+(define (render-game sg)
+  ; !!!
+  ; SnakeGame -> SnakeGame
+  ; render the state of the game on screen
+  (place-image SNAKESEGMENT
+           (point-x (snake-game-snake sg))
+           (point-y (snake-game-snake sg))
+           CANVAS))
+
+
+(define (turn-snake sg ke)
+  ; !!!
+  ; SnakeGame -> SnakeGame
+  ; turns the snake
+    sg)
+
+
+(define (crashed? sg)
+  ; !!!
+  ; SnakeGame -> Boolean
+  ; returns #t when the snake crashes out
+  #f)
+
+
+
+(define PLAYSNAKE (make-snake-game (make-point 400 400) (make-point 400 400)))
+(main PLAYSNAKE)
+
+  
