@@ -67,6 +67,7 @@
         (overlay
          (rectangle SEGMENTSIZE PULLBACK "solid" SNAKECOLOR)
          (rectangle PULLBACK SEGMENTSIZE "solid" SNAKECOLOR)))))))))
+(define FOOD (circle 7 "solid" "green"))
 (define CANVAS  (empty-scene CANVASWIDTH CANVASHEIGHT BACKGROUNDCOLOR))
 (define FIELDOFPLAY
   (beside
@@ -149,7 +150,10 @@
 (define (render-game sg)
   ; SnakeGame -> SnakeGame
   ; render the state of the game on screen
-  (render-snake (snake-game-snake sg)))
+  (place-image FOOD
+               (point-x (snake-game-food sg))
+               (point-y (snake-game-food sg))
+               (render-snake (snake-game-snake sg))))
 
 
 (define (turn-snake sg ke)
