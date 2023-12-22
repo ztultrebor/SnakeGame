@@ -46,9 +46,6 @@
 (define SNAKESTARTPT (make-point
                       (* (quotient (+ NCELLSHORIZ UNITCELLSIZE) 2) UNITCELLSIZE)
                       (* (quotient (+ NCELLSVERT UNITCELLSIZE) 2) UNITCELLSIZE)))
-(define FOODSTARTPT (make-point
-                     (* (random NCELLSHORIZ) UNITCELLSIZE)
-                     (* (random NCELLSVERT) UNITCELLSIZE)))
 (define SNAKESTARTDIR "right")
 (define SPACER 1)
 (define SEGMENTSIZE (- UNITCELLSIZE SPACER))
@@ -141,16 +138,14 @@
        (snake-game-snake sg)]
       [else (tail (snake-game-snake sg))]))
    (snake-game-mvmt sg)
-   (teleport-food sg)))
+   (teleport-food (snake-game-food sg) (snake-game-snake sg))))
 
 
 (define (render-game sg)
   ; SnakeGame -> SnakeGame
   ; render the state of the game on screen
-  (place-image FOOD
-               (point-x (snake-game-food sg))
-               (point-y (snake-game-food sg))
-               (render-snake (snake-game-snake sg))))
+  (render-snake (snake-game-snake sg)
+                (render-food (snake-game-food sg))))
 
 
 (define (turn-snake sg ke)
@@ -186,15 +181,24 @@
    (member? (first (snake-game-snake sg)) (rest (snake-game-snake sg)))))
 
 
-(define (render-snake sn)
-  ; SnakeGame -> SnakeGame
-  ; render the state of the game on screen
+(define (render-snake sn bkgd)
+  ; SnakeGame Img -> SnakeGame
+  ; render the snake on the given background
   (cond
-    [(empty? sn) FIELDOFPLAY]
+    [(empty? sn) bkgd]
     [else (place-image SNAKESEGMENT
                        (point-x (first sn))
                        (point-y (first sn))
-                       (render-snake (rest sn)))]))
+                       (render-snake (rest sn) bkgd))]))
+
+
+(define (render-food fd)
+  ; Point -> Img
+  ; render the state of the game on screen
+  (place-image FOOD
+               (point-x fd)
+               (point-y fd)
+               FIELDOFPLAY))
 
 
 (define (tail sn)
@@ -207,17 +211,22 @@
 
 
 
-(define (teleport-food sg)
+(define (teleport-food fd sn)
   ; !!! food can teleport onto the snake
-  ; SnakeGame -> SnakeGame
+  ; Point ListOfPoints -> Point
   ; move the food to a random, empty location after the snake eats it
   (cond
-    [(equal? (first (snake-game-snake sg)) (snake-game-food sg))
-     (make-point (* (+ (random (- NCELLSHORIZ 1)) 1) UNITCELLSIZE)
-                 (* (+ (random (- NCELLSVERT 1)) 1) UNITCELLSIZE))]
-    [else (snake-game-food sg)]))
+    [(equal? (first sn) fd) (random-point fd sn)]
+    [else fd]))
 
-
+(define (random-point pt sn)
+  (cond
+    [(member? pt sn)
+     (random-point (make-point (* (+ (random (- NCELLSHORIZ 1)) 1) UNITCELLSIZE)
+                 (* (+ (random (- NCELLSVERT 1)) 1) UNITCELLSIZE)) sn)]
+    [else pt]))
+    
+  
 (define (game-over sg)
   ; SnakeGame -> SnakeGame
   ; render a game-over screen
@@ -236,7 +245,7 @@
 
 
 ; actions
-
+(define FOODSTARTPT (random-point SNAKESTARTPT (list SNAKESTARTPT)))
 
 (define PLAYSNAKE (make-snake-game (list SNAKESTARTPT) SNAKESTARTDIR FOODSTARTPT))
 (define TESTSNAKE (make-snake-game TESTSTARTPT SNAKESTARTDIR SNAKESTARTPT))
