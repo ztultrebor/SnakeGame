@@ -7,17 +7,19 @@
 
 ; data definitions
 
-(define-struct snake-game [snake food])
-; A SnakeGame is a [ListOfPoints Point]
-; It consists of a ListOfPoints that describes a snake and another point that
-; indicates the location of food
+(define-struct snake-game [snake mvmt food])
+; A SnakeGame is a [ListOfPoints 1String Point]
+; It consists of a ListOfPoints that describes a snake,
+;    a 1String to describe the direction the snake's moving,
+;    and a second point that indicates the location of food
 #;
 (define (fn-on-snake-game snake-game)
-  ... (fn-on-snake snake-game-snake) ... (fn-on-point snake-game-food))
+  ... (fn-on-snake snake-game-snake) ... (fn-on-snake snake-game-mvmt)
+  ... (fn-on-point snake-game-food))
 
 (define-struct point [x y])
 ; A Point is a [N N]
-; It consists of two natural numbers that correspond to x and y coordunates
+; It consists of two natural numbers that correspond to x and y coordinates
 #;
 (define (fn-on-point p)
   ... (point-x p) ... (point-y p))
@@ -31,9 +33,13 @@
 (define SEGMENTSIZE (- UNITCELLSIZE SPACER))
 (define CURVATURE 4)
 (define PULLBACK (- SEGMENTSIZE CURVATURE CURVATURE))
-
 (define CANVASWIDTH (* 80 UNITCELLSIZE))
 (define CANVASHEIGHT (* 45 UNITCELLSIZE))
+(define NCELLSHORIZ (/ CANVASWIDTH UNITCELLSIZE))
+(define NCELLSVERT (/ CANVASHEIGHT UNITCELLSIZE))
+(define SNAKESTARTPT (make-point (* (quotient NCELLSHORIZ 2) UNITCELLSIZE)
+                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE)))
+(define SNAKESTARTDIR "right")
 (define SNAKESEGMENT
   (beside
    (rectangle SPACER SEGMENTSIZE "solid" BACKGROUNDCOLOR)
@@ -61,7 +67,7 @@
   ; SnakeGame -> SnakeGame
   ; run the game
   (big-bang sg
-    [on-tick update-game]
+    [on-tick update-game 1/14]
     [to-draw render-game]
     [on-key turn-snake]
     [stop-when crashed? render-game]))
@@ -71,11 +77,25 @@
   ; !!!
   ; SnakeGame -> SnakeGame
   ; move the snake and make food appear
-  sg)
+  (make-snake-game
+   (cond
+     [(string=? (snake-game-mvmt sg) "up")
+      (make-point (point-x (snake-game-snake sg))
+                  (- (point-y (snake-game-snake sg)) UNITCELLSIZE))]
+     [(string=? (snake-game-mvmt sg) "down")
+      (make-point (point-x (snake-game-snake sg))
+                  (+ (point-y (snake-game-snake sg)) UNITCELLSIZE))]
+     [(string=? (snake-game-mvmt sg) "left")
+      (make-point (-  (point-x (snake-game-snake sg)) UNITCELLSIZE)
+                  (point-y (snake-game-snake sg)))]
+     [(string=? (snake-game-mvmt sg) "right")
+      (make-point (+  (point-x (snake-game-snake sg)) UNITCELLSIZE)
+                  (point-y (snake-game-snake sg)))])
+   (snake-game-mvmt sg)
+   (snake-game-food sg)))
 
 
 (define (render-game sg)
-  ; !!!
   ; SnakeGame -> SnakeGame
   ; render the state of the game on screen
   (place-image SNAKESEGMENT
@@ -88,31 +108,36 @@
   ; SnakeGame -> SnakeGame
   ; turns the snake using the keyboard
   (make-snake-game
+   (snake-game-snake sg)
    (cond
-     [(key=? "up" ke) (make-point
-                    (point-x (snake-game-snake sg))
-                    (- (point-y (snake-game-snake sg)) UNITCELLSIZE))]
-     [(key=? "down" ke) (make-point
-                      (point-x (snake-game-snake sg))
-                      (+ (point-y (snake-game-snake sg)) UNITCELLSIZE))]
-     [(key=? "left" ke) (make-point
-                      (- (point-x (snake-game-snake sg)) UNITCELLSIZE)
-                      (point-y (snake-game-snake sg)))]
-     [(key=? "right" ke) (make-point
-                      (+ (point-x (snake-game-snake sg)) UNITCELLSIZE)
-                      (point-y (snake-game-snake sg)))])
-     (snake-game-food sg)))
+     [(or
+       (and (key=? "up" ke) (string=? (snake-game-mvmt sg) "down"))
+       (and (key=? "down" ke) (string=? (snake-game-mvmt sg) "up"))
+       (and (key=? "left" ke) (string=? (snake-game-mvmt sg) "right"))
+       (and (key=? "right" ke) (string=? (snake-game-mvmt sg) "left")))
+      (snake-game-mvmt sg)]
+     [(key=? "up" ke) "up"]
+     [(key=? "down" ke) "down"]
+     [(key=? "left" ke) "left"]
+     [(key=? "right" ke) "right"]
+     [else (snake-game-mvmt sg)])
+   (snake-game-food sg)))
 
 
-  (define (crashed? sg)
-    ; !!!
-    ; SnakeGame -> Boolean
-    ; returns #t when the snake crashes out
-    #f)
+(define (crashed? sg)
+  ; !!!
+  ; SnakeGame -> Boolean
+  ; returns #t when the snake crashes out
+  (or
+   (< (point-x (snake-game-snake sg)) 0)
+   (> (point-x (snake-game-snake sg)) CANVASWIDTH)
+   (< (point-y (snake-game-snake sg)) 0)
+   (> (point-y (snake-game-snake sg)) CANVASHEIGHT)))
 
 
 
-  (define PLAYSNAKE (make-snake-game (make-point 400 400) (make-point 400 400)))
-  (main PLAYSNAKE)
+; actions
 
-  
+(define PLAYSNAKE (make-snake-game SNAKESTARTPT SNAKESTARTDIR SNAKESTARTPT))
+(main PLAYSNAKE)
+
