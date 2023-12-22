@@ -84,6 +84,7 @@
 
 ; functions
 
+
 (define (main sg)
   ; SnakeGame -> SnakeGame
   ; run the game
@@ -145,18 +146,60 @@
 
 
 (define (update-snake-model snake move food)
-; ListOfPoints String Point -> ListOfPoints
-; updates the data representation after every clock tick
-; accounting for user-chosen direction of movement and food consumption
-   (cons
-    (cond
-      [(string=? move "up") (-pt (first snake) (make-point 0 UNITCELLSIZE))]
-      [(string=? move "down") (+pt (first snake) (make-point 0 UNITCELLSIZE))]
-      [(string=? move "left") (-pt (first snake) (make-point UNITCELLSIZE 0))]
-      [(string=? move "right") (+pt (first snake) (make-point UNITCELLSIZE 0))])
-    (cond
-      [(equal? (first snake) food) snake]
-      [else (tail snake)])))
+  ; ListOfPoints String Point -> ListOfPoints
+  ; updates the data representation after every clock tick
+  ; accounting for user-chosen direction of movement and food consumption
+  (cons
+   (cond
+     [(string=? move "up") (-pt (first snake) (make-point 0 UNITCELLSIZE))]
+     [(string=? move "down") (+pt (first snake) (make-point 0 UNITCELLSIZE))]
+     [(string=? move "left") (-pt (first snake) (make-point UNITCELLSIZE 0))]
+     [(string=? move "right") (+pt (first snake) (make-point UNITCELLSIZE 0))])
+   (cond
+     [(equal? (first snake) food) snake]
+     [else (tail snake)])))
+
+
+(define (tail sn)
+  ; Snake -> Snake
+  ; modifies the tail of the snake as it moves, It's simple!
+  ;     Just delete the last element in the list
+  (cond
+    [(empty? (rest sn)) '()]
+    [else (cons (first sn) (tail (rest sn)))]))
+
+
+(define (teleport-food fd sn)
+  ; Point ListOfPoints -> Point
+  ; move the food to a random, empty location after the snake eats it
+  (cond
+    [(equal? (first sn) fd) (random-point fd sn)]
+    [else fd]))
+
+
+(define (random-point pt sn)
+  ; Point ListOfPoints -> Point
+  ; ensures that when food teleports, it does so to an empty location
+  (cond
+    [(member? pt sn)
+     (random-point (make-point
+                    (* (+ (random (- NCELLSHORIZ 1)) 1) UNITCELLSIZE)
+                    (* (+ (random (- NCELLSVERT 1)) 1) UNITCELLSIZE)) sn)]
+    [else pt]))
+
+
+(define (+pt p1 p2)
+  ;; Point, Point -> Point
+  ;; add one point to another
+  (make-point (+ (point-x p1) (point-x p2))
+              (+ (point-y p1) (point-y p2))))
+
+
+(define (-pt p1 p2)
+  ;; Point, Point -> Point
+  ;; subtract one point from another
+  (make-point (- (point-x p1) (point-x p2))
+              (- (point-y p1) (point-y p2))))
 
 
 (define (render-snake sn bkgd)
@@ -179,46 +222,6 @@
                FIELDOFPLAY))
 
 
-(define (tail sn)
-  ; Snake -> Snake
-  ; modifies the tail of the snake as it moves, It's simple!
-  ;     Just delete the last element in the list
-  (cond
-    [(empty? (rest sn)) '()]
-    [else (cons (first sn) (tail (rest sn)))]))
-
-
-
-(define (teleport-food fd sn)
-  ; !!! food can teleport onto the snake
-  ; Point ListOfPoints -> Point
-  ; move the food to a random, empty location after the snake eats it
-  (cond
-    [(equal? (first sn) fd) (random-point fd sn)]
-    [else fd]))
-
-(define (random-point pt sn)
-  (cond
-    [(member? pt sn)
-     (random-point (make-point (* (+ (random (- NCELLSHORIZ 1)) 1) UNITCELLSIZE)
-                 (* (+ (random (- NCELLSVERT 1)) 1) UNITCELLSIZE)) sn)]
-    [else pt]))
-
-
-(define (+pt p1 p2)
-  ;; Point, Point -> Point
-  ;; add one point to another
-  (make-point (+ (point-x p1) (point-x p2))
-               (+ (point-y p1) (point-y p2))))
-
-
-(define (-pt p1 p2)
-  ;; Point, Point -> Point
-  ;; subtract one point from another
-  (make-point (- (point-x p1) (point-x p2))
-               (- (point-y p1) (point-y p2))))
-    
-  
 (define (game-over sg)
   ; SnakeGame -> SnakeGame
   ; render a game-over screen
