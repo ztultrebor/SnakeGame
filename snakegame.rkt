@@ -26,12 +26,14 @@
 
 (define SNAKECOLOR "red")
 (define BACKGROUNDCOLOR "white")
-(define SEGMENTSIZE 15)
+(define UNITCELLSIZE 16)
+(define SPACER 1)
+(define SEGMENTSIZE (- UNITCELLSIZE SPACER))
 (define CURVATURE 4)
 (define PULLBACK (- SEGMENTSIZE CURVATURE CURVATURE))
-(define SPACER 1)
-(define CANVASWIDTH (* 80 (+ SEGMENTSIZE SPACER)))
-(define CANVASHEIGHT (* 45 (+ SEGMENTSIZE SPACER)))
+
+(define CANVASWIDTH (* 80 UNITCELLSIZE))
+(define CANVASHEIGHT (* 45 UNITCELLSIZE))
 (define SNAKESEGMENT
   (beside
    (rectangle SPACER SEGMENTSIZE "solid" BACKGROUNDCOLOR)
@@ -77,27 +79,40 @@
   ; SnakeGame -> SnakeGame
   ; render the state of the game on screen
   (place-image SNAKESEGMENT
-           (point-x (snake-game-snake sg))
-           (point-y (snake-game-snake sg))
-           CANVAS))
+               (point-x (snake-game-snake sg))
+               (point-y (snake-game-snake sg))
+               CANVAS))
 
 
 (define (turn-snake sg ke)
-  ; !!!
   ; SnakeGame -> SnakeGame
-  ; turns the snake
-    sg)
+  ; turns the snake using the keyboard
+  (make-snake-game
+   (cond
+     [(key=? "up" ke) (make-point
+                    (point-x (snake-game-snake sg))
+                    (- (point-y (snake-game-snake sg)) UNITCELLSIZE))]
+     [(key=? "down" ke) (make-point
+                      (point-x (snake-game-snake sg))
+                      (+ (point-y (snake-game-snake sg)) UNITCELLSIZE))]
+     [(key=? "left" ke) (make-point
+                      (- (point-x (snake-game-snake sg)) UNITCELLSIZE)
+                      (point-y (snake-game-snake sg)))]
+     [(key=? "right" ke) (make-point
+                      (+ (point-x (snake-game-snake sg)) UNITCELLSIZE)
+                      (point-y (snake-game-snake sg)))])
+     (snake-game-food sg)))
 
 
-(define (crashed? sg)
-  ; !!!
-  ; SnakeGame -> Boolean
-  ; returns #t when the snake crashes out
-  #f)
+  (define (crashed? sg)
+    ; !!!
+    ; SnakeGame -> Boolean
+    ; returns #t when the snake crashes out
+    #f)
 
 
 
-(define PLAYSNAKE (make-snake-game (make-point 400 400) (make-point 400 400)))
-(main PLAYSNAKE)
+  (define PLAYSNAKE (make-snake-game (make-point 400 400) (make-point 400 400)))
+  (main PLAYSNAKE)
 
   
