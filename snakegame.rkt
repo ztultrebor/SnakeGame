@@ -44,11 +44,12 @@
 (define CURVATURE 4)
 (define PULLBACK (- SEGMENTSIZE CURVATURE CURVATURE))
 (define CANVASWIDTH (* 80 UNITCELLSIZE))
-(define CANVASHEIGHT (* 45 UNITCELLSIZE))
+(define CANVASHEIGHT (* 46 UNITCELLSIZE))
 (define NCELLSHORIZ (/ CANVASWIDTH UNITCELLSIZE))
 (define NCELLSVERT (/ CANVASHEIGHT UNITCELLSIZE))
-(define SNAKESTARTPT (make-point (* (quotient NCELLSHORIZ 2) UNITCELLSIZE)
-                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE)))
+(define SNAKESTARTPT (make-point
+                      (* (quotient (+ NCELLSHORIZ UNITCELLSIZE) 2) UNITCELLSIZE)
+                      (* (quotient (+ NCELLSVERT UNITCELLSIZE) 2) UNITCELLSIZE)))
 (define SNAKESTARTDIR "right")
 (define SNAKESEGMENT
   (beside
@@ -66,17 +67,27 @@
         (overlay
          (rectangle SEGMENTSIZE PULLBACK "solid" SNAKECOLOR)
          (rectangle PULLBACK SEGMENTSIZE "solid" SNAKECOLOR)))))))))
-(define CANVAS (empty-scene CANVASWIDTH CANVASHEIGHT BACKGROUNDCOLOR))
+(define CANVAS  (empty-scene CANVASWIDTH CANVASHEIGHT BACKGROUNDCOLOR))
+(define FIELDOFPLAY
+  (beside
+   (rectangle (/ UNITCELLSIZE 4) (+ CANVASHEIGHT (/ UNITCELLSIZE 2))
+              "solid" "blue")
+   (above
+    (rectangle CANVASWIDTH (/ UNITCELLSIZE 4) "solid" "blue")
+    CANVAS
+    (rectangle CANVASWIDTH (/ UNITCELLSIZE 4) "solid" "blue"))
+   (rectangle (/ UNITCELLSIZE 4) (+ CANVASHEIGHT (/ UNITCELLSIZE 2))
+              "solid" "blue")))
 
 
 ; test constants
 (define TESTSTARTPT (list
-                   (make-point (* (quotient NCELLSHORIZ 2) UNITCELLSIZE)
-                               (* (quotient NCELLSVERT 2) UNITCELLSIZE))
-                   (make-point (* (- (quotient NCELLSHORIZ 2) 1) UNITCELLSIZE)
-                               (* (quotient NCELLSVERT 2) UNITCELLSIZE))
-                   (make-point (* (- (quotient NCELLSHORIZ 2) 2) UNITCELLSIZE)
-                               (* (quotient NCELLSVERT 2) UNITCELLSIZE))))
+                     (make-point (* (quotient NCELLSHORIZ 2) UNITCELLSIZE)
+                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE))
+                     (make-point (* (- (quotient NCELLSHORIZ 2) 1) UNITCELLSIZE)
+                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE))
+                     (make-point (* (- (quotient NCELLSHORIZ 2) 2) UNITCELLSIZE)
+                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE))))
 
 
 
@@ -156,17 +167,19 @@
   ; SnakeGame -> Boolean
   ; returns #t when the snake crashes out
   (or
-   (< (point-x (first (snake-game-snake sg))) 0)
-   (> (point-x (first (snake-game-snake sg))) CANVASWIDTH)
-   (< (point-y (first (snake-game-snake sg))) 0)
-   (> (point-y (first (snake-game-snake sg))) CANVASHEIGHT)))
+   (< (point-x (first (snake-game-snake sg))) (/ UNITCELLSIZE 2))
+   (> (point-x (first (snake-game-snake sg)))
+      (- CANVASWIDTH (/ UNITCELLSIZE 2)))
+   (< (point-y (first (snake-game-snake sg))) (/ UNITCELLSIZE 2))
+   (> (point-y (first (snake-game-snake sg)))
+      (- CANVASHEIGHT (/ UNITCELLSIZE 2)))))
 
 
 (define (render-snake sn)
   ; SnakeGame -> SnakeGame
   ; render the state of the game on screen
   (cond
-    [(empty? sn) CANVAS]
+    [(empty? sn) FIELDOFPLAY]
     [else (place-image SNAKESEGMENT
                        (point-x (first sn))
                        (point-y (first sn))
@@ -178,16 +191,14 @@
   ; render a game-over screen
   (overlay
    (text "Game Over!" 48 "black")
-   (overlay/align "right" "bottom" (text "snake hit border" 16 "black")
-                  CANVAS)))
+   (overlay/align/offset "right" "bottom" (text "snake hit border" 16 "black")
+                         20 15 (render-game sg))))
 
 ; actions
 
 
 (define PLAYSNAKE (make-snake-game (list SNAKESTARTPT) SNAKESTARTDIR SNAKESTARTPT))
 (define TESTSNAKE (make-snake-game TESTSTARTPT SNAKESTARTDIR SNAKESTARTPT))
-
-
 
 
 ;(main PLAYSNAKE)
