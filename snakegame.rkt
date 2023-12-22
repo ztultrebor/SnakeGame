@@ -226,7 +226,12 @@
   ; SnakeGame -> SnakeGame
   ; render a game-over screen
   (overlay
-   (text "Game Over!" 48 "black")   
+   (above
+    (text "Game Over!" 48 "black")
+    (beside
+     (text "you achieved a snake of " 16 "black")
+     (text (number->string (length (snake-game-snake sg))) 24 "black")
+     (text " segments" 16 "black")))
    (overlay/align/offset
     "right" "bottom"
     (text
