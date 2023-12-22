@@ -70,7 +70,7 @@
     [on-tick update-game 1/14]
     [to-draw render-game]
     [on-key turn-snake]
-    [stop-when crashed? render-game]))
+    [stop-when crashed? game-over]))
 
 
 (define (update-game sg)
@@ -135,6 +135,13 @@
    (> (point-y (snake-game-snake sg)) CANVASHEIGHT)))
 
 
+(define (game-over sg)
+  ; SnakeGame -> SnakeGame
+  ; render a game-over screen
+  (overlay
+   (text "Game Over!" 48 "black")
+   (overlay/align "right" "bottom" (text "snake hit border" 16 "black")
+  CANVAS)))
 
 ; actions
 
