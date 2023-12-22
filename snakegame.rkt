@@ -87,6 +87,16 @@
                      (make-point (* (- (quotient NCELLSHORIZ 2) 1) UNITCELLSIZE)
                                  (* (quotient NCELLSVERT 2) UNITCELLSIZE))
                      (make-point (* (- (quotient NCELLSHORIZ 2) 2) UNITCELLSIZE)
+                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE))
+                     (make-point (* (- (quotient NCELLSHORIZ 2) 3) UNITCELLSIZE)
+                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE))
+                     (make-point (* (- (quotient NCELLSHORIZ 2) 4) UNITCELLSIZE)
+                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE))
+                     (make-point (* (- (quotient NCELLSHORIZ 2) 5) UNITCELLSIZE)
+                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE))
+                     (make-point (* (- (quotient NCELLSHORIZ 2) 6) UNITCELLSIZE)
+                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE))
+                     (make-point (* (- (quotient NCELLSHORIZ 2) 7) UNITCELLSIZE)
                                  (* (quotient NCELLSVERT 2) UNITCELLSIZE))))
 
 
@@ -172,7 +182,8 @@
       (- CANVASWIDTH (/ UNITCELLSIZE 2)))
    (< (point-y (first (snake-game-snake sg))) (/ UNITCELLSIZE 2))
    (> (point-y (first (snake-game-snake sg)))
-      (- CANVASHEIGHT (/ UNITCELLSIZE 2)))))
+      (- CANVASHEIGHT (/ UNITCELLSIZE 2)))
+   (member? (first (snake-game-snake sg)) (rest (snake-game-snake sg)))))
 
 
 (define (render-snake sn)
@@ -190,9 +201,16 @@
   ; SnakeGame -> SnakeGame
   ; render a game-over screen
   (overlay
-   (text "Game Over!" 48 "black")
-   (overlay/align/offset "right" "bottom" (text "snake hit border" 16 "black")
-                         20 15 (render-game sg))))
+   (text "Game Over!" 48 "black")   
+   (overlay/align/offset
+    "right" "bottom"
+    (text
+     (cond
+       [(member? (first (snake-game-snake sg)) (rest (snake-game-snake sg)))
+        "self-annihilation"]
+       [else "snake hit border"])
+     16 "black")
+    20 15 (render-game sg))))
 
 ; actions
 
