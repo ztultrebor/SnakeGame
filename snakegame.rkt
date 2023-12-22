@@ -39,18 +39,21 @@
 (define SNAKECOLOR "red")
 (define BACKGROUNDCOLOR "white")
 (define UNITCELLSIZE 16)
+(define NCELLSHORIZ 40)
+(define NCELLSVERT 30)
+(define CANVASWIDTH (* NCELLSHORIZ UNITCELLSIZE))
+(define CANVASHEIGHT (* NCELLSVERT UNITCELLSIZE))
+(define SNAKESTARTPT (make-point
+                      (* (quotient (+ NCELLSHORIZ UNITCELLSIZE) 2) UNITCELLSIZE)
+                      (* (quotient (+ NCELLSVERT UNITCELLSIZE) 2) UNITCELLSIZE)))
+(define FOODSTARTPT (make-point
+                     (* (random NCELLSHORIZ) UNITCELLSIZE)
+                     (* (random NCELLSVERT) UNITCELLSIZE)))
+(define SNAKESTARTDIR "right")
 (define SPACER 1)
 (define SEGMENTSIZE (- UNITCELLSIZE SPACER))
 (define CURVATURE 4)
 (define PULLBACK (- SEGMENTSIZE CURVATURE CURVATURE))
-(define CANVASWIDTH (* 80 UNITCELLSIZE))
-(define CANVASHEIGHT (* 46 UNITCELLSIZE))
-(define NCELLSHORIZ (/ CANVASWIDTH UNITCELLSIZE))
-(define NCELLSVERT (/ CANVASHEIGHT UNITCELLSIZE))
-(define SNAKESTARTPT (make-point
-                      (* (quotient (+ NCELLSHORIZ UNITCELLSIZE) 2) UNITCELLSIZE)
-                      (* (quotient (+ NCELLSVERT UNITCELLSIZE) 2) UNITCELLSIZE)))
-(define SNAKESTARTDIR "right")
 (define SNAKESEGMENT
   (beside
    (rectangle SPACER SEGMENTSIZE "solid" BACKGROUNDCOLOR)
@@ -71,14 +74,14 @@
 (define CANVAS  (empty-scene CANVASWIDTH CANVASHEIGHT BACKGROUNDCOLOR))
 (define FIELDOFPLAY
   (beside
-   (rectangle (/ UNITCELLSIZE 4) (+ CANVASHEIGHT (/ UNITCELLSIZE 2))
-              "solid" "blue")
+   (rectangle (/ UNITCELLSIZE 4)
+              (+ CANVASHEIGHT (/ UNITCELLSIZE 2))  "solid" "blue")
    (above
     (rectangle CANVASWIDTH (/ UNITCELLSIZE 4) "solid" "blue")
     CANVAS
     (rectangle CANVASWIDTH (/ UNITCELLSIZE 4) "solid" "blue"))
-   (rectangle (/ UNITCELLSIZE 4) (+ CANVASHEIGHT (/ UNITCELLSIZE 2))
-              "solid" "blue")))
+   (rectangle (/ UNITCELLSIZE 4)
+              (+ CANVASHEIGHT (/ UNITCELLSIZE 2)) "solid" "blue")))
 
 
 ; test constants
@@ -137,96 +140,106 @@
       [(equal? (first (snake-game-snake sg)) (snake-game-food sg))
        (snake-game-snake sg)]
       [else (tail (snake-game-snake sg))]))
-    (snake-game-mvmt sg)
-    (snake-game-food sg)))
+   (snake-game-mvmt sg)
+   (teleport-food sg)))
 
 
-  (define (tail sn)
-    ; Snake -> Snake
-    ; modifies the tail of the snake as it moves, It's simle!
-    ;     Just delete the last element in the list
-    (cond
-      [(empty? (rest sn)) '()]
-      [else (cons (first sn) (tail (rest sn)))]))
+(define (render-game sg)
+  ; SnakeGame -> SnakeGame
+  ; render the state of the game on screen
+  (place-image FOOD
+               (point-x (snake-game-food sg))
+               (point-y (snake-game-food sg))
+               (render-snake (snake-game-snake sg))))
 
 
-  (define (render-game sg)
-    ; SnakeGame -> SnakeGame
-    ; render the state of the game on screen
-    (place-image FOOD
-                 (point-x (snake-game-food sg))
-                 (point-y (snake-game-food sg))
-                 (render-snake (snake-game-snake sg))))
+(define (turn-snake sg ke)
+  ; SnakeGame -> SnakeGame
+  ; turns the snake using the keyboard
+  (make-snake-game
+   (snake-game-snake sg)
+   (cond
+     [(or
+       (and (key=? "up" ke) (string=? (snake-game-mvmt sg) "down"))
+       (and (key=? "down" ke) (string=? (snake-game-mvmt sg) "up"))
+       (and (key=? "left" ke) (string=? (snake-game-mvmt sg) "right"))
+       (and (key=? "right" ke) (string=? (snake-game-mvmt sg) "left")))
+      (snake-game-mvmt sg)]
+     [(key=? "up" ke) "up"]
+     [(key=? "down" ke) "down"]
+     [(key=? "left" ke) "left"]
+     [(key=? "right" ke) "right"]
+     [else (snake-game-mvmt sg)])
+   (snake-game-food sg)))
 
 
-  (define (turn-snake sg ke)
-    ; SnakeGame -> SnakeGame
-    ; turns the snake using the keyboard
-    (make-snake-game
-     (snake-game-snake sg)
+(define (crashed? sg)
+  ; SnakeGame -> Boolean
+  ; returns #t when the snake crashes out
+  (or
+   (< (point-x (first (snake-game-snake sg))) (/ UNITCELLSIZE 2))
+   (> (point-x (first (snake-game-snake sg)))
+      (- CANVASWIDTH (/ UNITCELLSIZE 2)))
+   (< (point-y (first (snake-game-snake sg))) (/ UNITCELLSIZE 2))
+   (> (point-y (first (snake-game-snake sg)))
+      (- CANVASHEIGHT (/ UNITCELLSIZE 2)))
+   (member? (first (snake-game-snake sg)) (rest (snake-game-snake sg)))))
+
+
+(define (render-snake sn)
+  ; SnakeGame -> SnakeGame
+  ; render the state of the game on screen
+  (cond
+    [(empty? sn) FIELDOFPLAY]
+    [else (place-image SNAKESEGMENT
+                       (point-x (first sn))
+                       (point-y (first sn))
+                       (render-snake (rest sn)))]))
+
+
+(define (tail sn)
+  ; Snake -> Snake
+  ; modifies the tail of the snake as it moves, It's simple!
+  ;     Just delete the last element in the list
+  (cond
+    [(empty? (rest sn)) '()]
+    [else (cons (first sn) (tail (rest sn)))]))
+
+
+
+(define (teleport-food sg)
+  ; !!! food can teleport onto the snake
+  ; SnakeGame -> SnakeGame
+  ; move the food to a random, empty location after the snake eats it
+  (cond
+    [(equal? (first (snake-game-snake sg)) (snake-game-food sg))
+     (make-point (* (+ (random (- NCELLSHORIZ 1)) 1) UNITCELLSIZE)
+                 (* (+ (random (- NCELLSVERT 1)) 1) UNITCELLSIZE))]
+    [else (snake-game-food sg)]))
+
+
+(define (game-over sg)
+  ; SnakeGame -> SnakeGame
+  ; render a game-over screen
+  (overlay
+   (text "Game Over!" 48 "black")   
+   (overlay/align/offset
+    "right" "bottom"
+    (text
      (cond
-       [(or
-         (and (key=? "up" ke) (string=? (snake-game-mvmt sg) "down"))
-         (and (key=? "down" ke) (string=? (snake-game-mvmt sg) "up"))
-         (and (key=? "left" ke) (string=? (snake-game-mvmt sg) "right"))
-         (and (key=? "right" ke) (string=? (snake-game-mvmt sg) "left")))
-        (snake-game-mvmt sg)]
-       [(key=? "up" ke) "up"]
-       [(key=? "down" ke) "down"]
-       [(key=? "left" ke) "left"]
-       [(key=? "right" ke) "right"]
-       [else (snake-game-mvmt sg)])
-     (snake-game-food sg)))
+       [(member? (first (snake-game-snake sg)) (rest (snake-game-snake sg)))
+        "self-annihilation"]
+       [else "snake hit border"])
+     16 "black")
+    20 15 (render-game sg))))
 
 
-  (define (crashed? sg)
-    ; !!!
-    ; SnakeGame -> Boolean
-    ; returns #t when the snake crashes out
-    (or
-     (< (point-x (first (snake-game-snake sg))) (/ UNITCELLSIZE 2))
-     (> (point-x (first (snake-game-snake sg)))
-        (- CANVASWIDTH (/ UNITCELLSIZE 2)))
-     (< (point-y (first (snake-game-snake sg))) (/ UNITCELLSIZE 2))
-     (> (point-y (first (snake-game-snake sg)))
-        (- CANVASHEIGHT (/ UNITCELLSIZE 2)))
-     (member? (first (snake-game-snake sg)) (rest (snake-game-snake sg)))))
+
+; actions
 
 
-  (define (render-snake sn)
-    ; SnakeGame -> SnakeGame
-    ; render the state of the game on screen
-    (cond
-      [(empty? sn) FIELDOFPLAY]
-      [else (place-image SNAKESEGMENT
-                         (point-x (first sn))
-                         (point-y (first sn))
-                         (render-snake (rest sn)))]))
+(define PLAYSNAKE (make-snake-game (list SNAKESTARTPT) SNAKESTARTDIR FOODSTARTPT))
+(define TESTSNAKE (make-snake-game TESTSTARTPT SNAKESTARTDIR SNAKESTARTPT))
 
 
-  (define (game-over sg)
-    ; SnakeGame -> SnakeGame
-    ; render a game-over screen
-    (overlay
-     (text "Game Over!" 48 "black")   
-     (overlay/align/offset
-      "right" "bottom"
-      (text
-       (cond
-         [(member? (first (snake-game-snake sg)) (rest (snake-game-snake sg)))
-          "self-annihilation"]
-         [else "snake hit border"])
-       16 "black")
-      20 15 (render-game sg))))
-
-  ; actions
-
-
-  (define PLAYSNAKE (make-snake-game (list SNAKESTARTPT) SNAKESTARTDIR SNAKESTARTPT))
-  (define TESTSNAKE (make-snake-game TESTSTARTPT SNAKESTARTDIR SNAKESTARTPT))
-
-
-  (main PLAYSNAKE)
-
- ; (main TESTSNAKE)
-  
+(main PLAYSNAKE)
