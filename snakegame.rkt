@@ -44,8 +44,8 @@
 (define CANVASWIDTH (* NCELLSHORIZ UNITCELLSIZE))
 (define CANVASHEIGHT (* NCELLSVERT UNITCELLSIZE))
 (define SNAKESTARTPT (make-point
-                      (* (quotient (+ NCELLSHORIZ UNITCELLSIZE) 2) UNITCELLSIZE)
-                      (* (quotient (+ NCELLSVERT UNITCELLSIZE) 2) UNITCELLSIZE)))
+                      (* (quotient NCELLSHORIZ 2) UNITCELLSIZE)
+                      (* (quotient NCELLSVERT 2) UNITCELLSIZE)))
 (define SNAKESTARTDIR "right")
 (define SPACER 1)
 (define SEGMENTSIZE (- UNITCELLSIZE SPACER))
@@ -81,29 +81,8 @@
               (+ CANVASHEIGHT (/ UNITCELLSIZE 2)) "solid" "blue")))
 
 
-; test constants
-(define TESTSTARTPT (list
-                     (make-point (* (quotient NCELLSHORIZ 2) UNITCELLSIZE)
-                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE))
-                     (make-point (* (- (quotient NCELLSHORIZ 2) 1) UNITCELLSIZE)
-                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE))
-                     (make-point (* (- (quotient NCELLSHORIZ 2) 2) UNITCELLSIZE)
-                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE))
-                     (make-point (* (- (quotient NCELLSHORIZ 2) 3) UNITCELLSIZE)
-                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE))
-                     (make-point (* (- (quotient NCELLSHORIZ 2) 4) UNITCELLSIZE)
-                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE))
-                     (make-point (* (- (quotient NCELLSHORIZ 2) 5) UNITCELLSIZE)
-                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE))
-                     (make-point (* (- (quotient NCELLSHORIZ 2) 6) UNITCELLSIZE)
-                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE))
-                     (make-point (* (- (quotient NCELLSHORIZ 2) 7) UNITCELLSIZE)
-                                 (* (quotient NCELLSVERT 2) UNITCELLSIZE))))
-
-
 
 ; functions
-
 
 (define (main sg)
   ; SnakeGame -> SnakeGame
@@ -119,24 +98,8 @@
   ; SnakeGame -> SnakeGame
   ; move the snake and make food appear
   (make-snake-game
-   (cons
-    (cond
-      [(string=? (snake-game-mvmt sg) "up")
-       (make-point (point-x (first (snake-game-snake sg)))
-                   (- (point-y (first (snake-game-snake sg))) UNITCELLSIZE))]
-      [(string=? (snake-game-mvmt sg) "down")
-       (make-point (point-x (first (snake-game-snake sg)))
-                   (+ (point-y (first (snake-game-snake sg))) UNITCELLSIZE))]
-      [(string=? (snake-game-mvmt sg) "left")
-       (make-point (-  (point-x (first (snake-game-snake sg))) UNITCELLSIZE)
-                   (point-y (first (snake-game-snake sg))))]
-      [(string=? (snake-game-mvmt sg) "right")
-       (make-point (+  (point-x (first (snake-game-snake sg))) UNITCELLSIZE)
-                   (point-y (first (snake-game-snake sg))))])
-    (cond
-      [(equal? (first (snake-game-snake sg)) (snake-game-food sg))
-       (snake-game-snake sg)]
-      [else (tail (snake-game-snake sg))]))
+   (update-snake-model (snake-game-snake sg)
+                       (snake-game-mvmt sg) (snake-game-food sg))
    (snake-game-mvmt sg)
    (teleport-food (snake-game-food sg) (snake-game-snake sg))))
 
@@ -181,9 +144,24 @@
    (member? (first (snake-game-snake sg)) (rest (snake-game-snake sg)))))
 
 
+(define (update-snake-model snake move food)
+; ListOfPoints String Point -> ListOfPoints
+; updates the data representation after every clock tick
+; accounting for user-chosen direction of movement and food consumption
+   (cons
+    (cond
+      [(string=? move "up") (-pt (first snake) (make-point 0 UNITCELLSIZE))]
+      [(string=? move "down") (+pt (first snake) (make-point 0 UNITCELLSIZE))]
+      [(string=? move "left") (-pt (first snake) (make-point UNITCELLSIZE 0))]
+      [(string=? move "right") (+pt (first snake) (make-point UNITCELLSIZE 0))])
+    (cond
+      [(equal? (first snake) food) snake]
+      [else (tail snake)])))
+
+
 (define (render-snake sn bkgd)
   ; SnakeGame Img -> SnakeGame
-  ; render the snake on the given background
+  ; render the snake on the background provided
   (cond
     [(empty? sn) bkgd]
     [else (place-image SNAKESEGMENT
@@ -194,7 +172,7 @@
 
 (define (render-food fd)
   ; Point -> Img
-  ; render the state of the game on screen
+  ; place an image of food at the proper location of the playing field
   (place-image FOOD
                (point-x fd)
                (point-y fd)
@@ -225,6 +203,20 @@
      (random-point (make-point (* (+ (random (- NCELLSHORIZ 1)) 1) UNITCELLSIZE)
                  (* (+ (random (- NCELLSVERT 1)) 1) UNITCELLSIZE)) sn)]
     [else pt]))
+
+
+(define (+pt p1 p2)
+  ;; Point, Point -> Point
+  ;; add one point to another
+  (make-point (+ (point-x p1) (point-x p2))
+               (+ (point-y p1) (point-y p2))))
+
+
+(define (-pt p1 p2)
+  ;; Point, Point -> Point
+  ;; subtract one point from another
+  (make-point (- (point-x p1) (point-x p2))
+               (- (point-y p1) (point-y p2))))
     
   
 (define (game-over sg)
@@ -246,9 +238,6 @@
 
 ; actions
 (define FOODSTARTPT (random-point SNAKESTARTPT (list SNAKESTARTPT)))
-
 (define PLAYSNAKE (make-snake-game (list SNAKESTARTPT) SNAKESTARTDIR FOODSTARTPT))
-(define TESTSNAKE (make-snake-game TESTSTARTPT SNAKESTARTDIR SNAKESTARTPT))
-
 
 (main PLAYSNAKE)
