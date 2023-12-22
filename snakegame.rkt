@@ -17,6 +17,16 @@
   ... (fn-on-snake snake-game-snake) ... (fn-on-snake snake-game-mvmt)
   ... (fn-on-point snake-game-food))
 
+
+; A Snake is a ListOfPoints
+; Each point describes the location of segment of the snake
+#;
+(define (fn-on-snake sn)
+  (cond
+    [(empty? sn) ...]
+    [(empty? (rest sn)) ...]
+    [else ... (fn-on-point (first sn)) ... (fn-on-snake (rest sn))]))
+
 (define-struct point [x y])
 ; A Point is a [N N]
 ; It consists of two natural numbers that correspond to x and y coordinates
@@ -59,6 +69,16 @@
 (define CANVAS (empty-scene CANVASWIDTH CANVASHEIGHT BACKGROUNDCOLOR))
 
 
+; test constants
+(define TESTSTARTPT (list
+                   (make-point (* (quotient NCELLSHORIZ 2) UNITCELLSIZE)
+                               (* (quotient NCELLSVERT 2) UNITCELLSIZE))
+                   (make-point (* (- (quotient NCELLSHORIZ 2) 1) UNITCELLSIZE)
+                               (* (quotient NCELLSVERT 2) UNITCELLSIZE))
+                   (make-point (* (- (quotient NCELLSHORIZ 2) 2) UNITCELLSIZE)
+                               (* (quotient NCELLSVERT 2) UNITCELLSIZE))))
+
+
 
 ; functions
 
@@ -74,34 +94,41 @@
 
 
 (define (update-game sg)
-  ; !!!
   ; SnakeGame -> SnakeGame
   ; move the snake and make food appear
   (make-snake-game
-   (cond
-     [(string=? (snake-game-mvmt sg) "up")
-      (make-point (point-x (snake-game-snake sg))
-                  (- (point-y (snake-game-snake sg)) UNITCELLSIZE))]
-     [(string=? (snake-game-mvmt sg) "down")
-      (make-point (point-x (snake-game-snake sg))
-                  (+ (point-y (snake-game-snake sg)) UNITCELLSIZE))]
-     [(string=? (snake-game-mvmt sg) "left")
-      (make-point (-  (point-x (snake-game-snake sg)) UNITCELLSIZE)
-                  (point-y (snake-game-snake sg)))]
-     [(string=? (snake-game-mvmt sg) "right")
-      (make-point (+  (point-x (snake-game-snake sg)) UNITCELLSIZE)
-                  (point-y (snake-game-snake sg)))])
+   (cons
+    (cond
+      [(string=? (snake-game-mvmt sg) "up")
+       (make-point (point-x (first (snake-game-snake sg)))
+                   (- (point-y (first (snake-game-snake sg))) UNITCELLSIZE))]
+      [(string=? (snake-game-mvmt sg) "down")
+       (make-point (point-x (first (snake-game-snake sg)))
+                   (+ (point-y (first (snake-game-snake sg))) UNITCELLSIZE))]
+      [(string=? (snake-game-mvmt sg) "left")
+       (make-point (-  (point-x (first (snake-game-snake sg))) UNITCELLSIZE)
+                   (point-y (first (snake-game-snake sg))))]
+      [(string=? (snake-game-mvmt sg) "right")
+       (make-point (+  (point-x (first (snake-game-snake sg))) UNITCELLSIZE)
+                   (point-y (first (snake-game-snake sg))))])
+    (tail (snake-game-snake sg)))
    (snake-game-mvmt sg)
    (snake-game-food sg)))
+
+
+(define (tail sn)
+  ; Snake -> Snake
+  ; modifies the tail of the snake as it moves, It's simle!
+  ;     Just delete the last element in the list
+  (cond
+    [(empty? (rest sn)) '()]
+    [else (cons (first sn) (tail (rest sn)))]))
 
 
 (define (render-game sg)
   ; SnakeGame -> SnakeGame
   ; render the state of the game on screen
-  (place-image SNAKESEGMENT
-               (point-x (snake-game-snake sg))
-               (point-y (snake-game-snake sg))
-               CANVAS))
+  (render-snake (snake-game-snake sg)))
 
 
 (define (turn-snake sg ke)
@@ -129,10 +156,21 @@
   ; SnakeGame -> Boolean
   ; returns #t when the snake crashes out
   (or
-   (< (point-x (snake-game-snake sg)) 0)
-   (> (point-x (snake-game-snake sg)) CANVASWIDTH)
-   (< (point-y (snake-game-snake sg)) 0)
-   (> (point-y (snake-game-snake sg)) CANVASHEIGHT)))
+   (< (point-x (first (snake-game-snake sg))) 0)
+   (> (point-x (first (snake-game-snake sg))) CANVASWIDTH)
+   (< (point-y (first (snake-game-snake sg))) 0)
+   (> (point-y (first (snake-game-snake sg))) CANVASHEIGHT)))
+
+
+(define (render-snake sn)
+  ; SnakeGame -> SnakeGame
+  ; render the state of the game on screen
+  (cond
+    [(empty? sn) CANVAS]
+    [else (place-image SNAKESEGMENT
+                       (point-x (first sn))
+                       (point-y (first sn))
+                       (render-snake (rest sn)))]))
 
 
 (define (game-over sg)
@@ -141,10 +179,17 @@
   (overlay
    (text "Game Over!" 48 "black")
    (overlay/align "right" "bottom" (text "snake hit border" 16 "black")
-  CANVAS)))
+                  CANVAS)))
 
 ; actions
 
-(define PLAYSNAKE (make-snake-game SNAKESTARTPT SNAKESTARTDIR SNAKESTARTPT))
-(main PLAYSNAKE)
 
+(define PLAYSNAKE (make-snake-game (list SNAKESTARTPT) SNAKESTARTDIR SNAKESTARTPT))
+(define TESTSNAKE (make-snake-game TESTSTARTPT SNAKESTARTDIR SNAKESTARTPT))
+
+
+
+
+;(main PLAYSNAKE)
+
+(main TESTSNAKE)
