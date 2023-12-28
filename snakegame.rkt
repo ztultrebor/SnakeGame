@@ -1,10 +1,13 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-beginner-abbr-reader.ss" "lang")((modname snakegame) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+#reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname snakegame) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
 (require 2htdp/image)
 (require 2htdp/universe)
 
+; A game of Snake, or Worms as they call it sometimes
 
+
+; ============================
 ; data definitions
 
 (define-struct snake-game [snake mvmt food])
@@ -18,7 +21,7 @@
   ... (fn-on-point snake-game-food))
 
 
-; A Snake is a ListOfPoints
+; A Snake is a [ListOf Point]
 ; Each point describes the location of segment of the snake
 #;
 (define (fn-on-snake sn)
@@ -27,6 +30,7 @@
     [(empty? (rest sn)) ...]
     [else ... (fn-on-point (first sn)) ... (fn-on-snake (rest sn))]))
 
+
 (define-struct point [x y])
 ; A Point is a [N N]
 ; It consists of two natural numbers that correspond to x and y coordinates
@@ -34,6 +38,8 @@
 (define (fn-on-point p)
   ... (point-x p) ... (point-y p))
 
+
+; ===============================
 ; constants
 
 (define SNAKECOLOR "red")
@@ -51,22 +57,19 @@
 (define SEGMENTSIZE (- UNITCELLSIZE SPACER))
 (define CURVATURE 4)
 (define PULLBACK (- SEGMENTSIZE CURVATURE CURVATURE))
+(define CORNER (circle CURVATURE "solid" SNAKECOLOR))
 (define SNAKESEGMENT
   (beside
    (rectangle SPACER SEGMENTSIZE "solid" BACKGROUNDCOLOR)
    (above
     (rectangle SEGMENTSIZE SPACER "solid" BACKGROUNDCOLOR)
-    (overlay/align
-     "left" "bottom" (circle CURVATURE "solid" SNAKECOLOR)
-     (overlay/align
-      "right" "bottom" (circle CURVATURE "solid" SNAKECOLOR)
-      (overlay/align
-       "right" "top" (circle CURVATURE "solid" SNAKECOLOR)
-       (overlay/align
-        "left" "top" (circle CURVATURE "solid" SNAKECOLOR)
-        (overlay
-         (rectangle SEGMENTSIZE PULLBACK "solid" SNAKECOLOR)
-         (rectangle PULLBACK SEGMENTSIZE "solid" SNAKECOLOR)))))))))
+    (overlay/align "left" "bottom" CORNER
+                   (overlay/align "right" "bottom" CORNER
+                                  (overlay/align "right" "top" CORNER
+                                                 (overlay/align "left" "top" CORNER
+                                                                (overlay
+                                                                 (rectangle SEGMENTSIZE PULLBACK "solid" SNAKECOLOR)
+                                                                 (rectangle PULLBACK SEGMENTSIZE "solid" SNAKECOLOR)))))))))
 (define FOOD (circle 7 "solid" "green"))
 (define CANVAS  (empty-scene CANVASWIDTH CANVASHEIGHT BACKGROUNDCOLOR))
 (define FIELDOFPLAY
@@ -82,6 +85,7 @@
 
 
 
+; ===============================
 ; functions
 
 
@@ -135,18 +139,20 @@
 (define (crashed? sg)
   ; SnakeGame -> Boolean
   ; returns #t when the snake crashes out
-  (or
-   (< (point-x (first (snake-game-snake sg))) (/ UNITCELLSIZE 2))
-   (> (point-x (first (snake-game-snake sg)))
-      (- CANVASWIDTH (/ UNITCELLSIZE 2)))
-   (< (point-y (first (snake-game-snake sg))) (/ UNITCELLSIZE 2))
-   (> (point-y (first (snake-game-snake sg)))
-      (- CANVASHEIGHT (/ UNITCELLSIZE 2)))
+  (or 
+   (not
+    (and
+     (< (/ UNITCELLSIZE 2)
+        (point-x (first (snake-game-snake sg)))
+        (- CANVASWIDTH (/ UNITCELLSIZE 2)))
+     (< (/ UNITCELLSIZE 2)
+        (point-y (first (snake-game-snake sg))) 
+        (- CANVASHEIGHT (/ UNITCELLSIZE 2)))))
    (member? (first (snake-game-snake sg)) (rest (snake-game-snake sg)))))
 
 
 (define (update-snake-model snake move food)
-  ; ListOfPoints String Point -> ListOfPoints
+  ; [ListOf Point] String Point -> [ListOf Point]
   ; updates the data representation after every clock tick
   ; accounting for user-chosen direction of movement and food consumption
   (cons
@@ -170,7 +176,7 @@
 
 
 (define (teleport-food fd sn)
-  ; Point ListOfPoints -> Point
+  ; Point [ListOf Point] -> Point
   ; move the food to a random, empty location after the snake eats it
   (cond
     [(equal? (first sn) fd) (random-point fd sn)]
@@ -178,7 +184,7 @@
 
 
 (define (random-point pt sn)
-  ; Point ListOfPoints -> Point
+  ; Point [ListOf Point] -> Point
   ; ensures that when food teleports, it does so to an empty location
   (cond
     [(member? pt sn)
@@ -189,28 +195,29 @@
 
 
 (define (+pt p1 p2)
-  ;; Point, Point -> Point
+  ;; Point Point -> Point
   ;; add one point to another
   (make-point (+ (point-x p1) (point-x p2))
               (+ (point-y p1) (point-y p2))))
 
 
 (define (-pt p1 p2)
-  ;; Point, Point -> Point
+  ;; Point Point -> Point
   ;; subtract one point from another
   (make-point (- (point-x p1) (point-x p2))
               (- (point-y p1) (point-y p2))))
 
 
 (define (render-snake sn bkgd)
-  ; SnakeGame Img -> SnakeGame
+  ; Snake Img -> Img
   ; render the snake on the background provided
-  (cond
-    [(empty? sn) bkgd]
-    [else (place-image SNAKESEGMENT
-                       (point-x (first sn))
-                       (point-y (first sn))
-                       (render-snake (rest sn) bkgd))]))
+  (local (
+          (define (place-segment sgmt cvs)
+            ; Img Img -> Img
+            ; place a snake segment on a image of a snake under construction
+            (place-image SNAKESEGMENT (point-x sgmt) (point-y sgmt) cvs)))
+    ; - IN -
+    (foldr place-segment bkgd sn))
 
 
 (define (render-food fd)
@@ -243,7 +250,7 @@
     20 15 (render-game sg))))
 
 
-
+; ================================
 ; actions
 (define FOODSTARTPT (random-point SNAKESTARTPT (list SNAKESTARTPT)))
 (define PLAYSNAKE (make-snake-game (list SNAKESTARTPT) SNAKESTARTDIR FOODSTARTPT))
