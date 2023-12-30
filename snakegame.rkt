@@ -119,21 +119,18 @@
 (define (turn-snake sg ke)
   ; SnakeGame -> SnakeGame
   ; turns the snake using the keyboard
-  (make-snake-game
-   (snake-game-snake sg)
-   (cond
-     [(or
-       (and (key=? "up" ke) (string=? (snake-game-mvmt sg) "down"))
-       (and (key=? "down" ke) (string=? (snake-game-mvmt sg) "up"))
-       (and (key=? "left" ke) (string=? (snake-game-mvmt sg) "right"))
-       (and (key=? "right" ke) (string=? (snake-game-mvmt sg) "left")))
-      (snake-game-mvmt sg)]
-     [(key=? "up" ke) "up"]
-     [(key=? "down" ke) "down"]
-     [(key=? "left" ke) "left"]
-     [(key=? "right" ke) "right"]
-     [else (snake-game-mvmt sg)])
-   (snake-game-food sg)))
+  (local (
+          (define dir (snake-game-mvmt sg)))
+    ; - IN -
+    (make-snake-game
+     (snake-game-snake sg)
+     (cond
+       [(and (key=? "up" ke) (not (string=? dir "down"))) "up"]
+       [(and (key=? "down" ke) (not (string=? dir "up"))) "down"]
+       [(and (key=? "left" ke) (not (string=? dir "right"))) "left"]
+       [(and (key=? "right" ke) (not (string=? dir "left"))) "right"]
+       [else (snake-game-mvmt sg)])
+     (snake-game-food sg))))
 
 
 (define (crashed? sg)
@@ -217,7 +214,7 @@
             ; place a snake segment on a image of a snake under construction
             (place-image SNAKESEGMENT (point-x sgmt) (point-y sgmt) cvs)))
     ; - IN -
-    (foldr place-segment bkgd sn))
+    (foldr place-segment bkgd sn)))
 
 
 (define (render-food fd)
