@@ -50,12 +50,12 @@
 (define CANVASWIDTH (* NCELLSHORIZ UNITCELLSIZE))
 (define CANVASHEIGHT (* NCELLSVERT UNITCELLSIZE))
 (define SNAKESTARTPT (make-point
-                      (* (quotient NCELLSHORIZ 2) UNITCELLSIZE)
-                      (* (quotient NCELLSVERT 2) UNITCELLSIZE)))
+                      (* (+ (quotient NCELLSHORIZ 2) 1/4) UNITCELLSIZE)
+                      (* (+ (quotient NCELLSVERT 2) 1/4) UNITCELLSIZE)))
 (define SNAKESTARTDIR "right")
 (define SPACER 1)
-(define SEGMENTSIZE (- UNITCELLSIZE SPACER))
-(define CURVATURE 4)
+(define SEGMENTSIZE (- UNITCELLSIZE (* 2 SPACER)))
+(define CURVATURE 3)
 (define PULLBACK (- SEGMENTSIZE CURVATURE CURVATURE))
 (define CORNER (circle CURVATURE "solid" SNAKECOLOR))
 (define SNAKESEGMENT
@@ -63,13 +63,19 @@
    (rectangle SPACER SEGMENTSIZE "solid" BACKGROUNDCOLOR)
    (above
     (rectangle SEGMENTSIZE SPACER "solid" BACKGROUNDCOLOR)
-    (overlay/align "left" "bottom" CORNER
-                   (overlay/align "right" "bottom" CORNER
-                                  (overlay/align "right" "top" CORNER
-                                                 (overlay/align "left" "top" CORNER
-                                                                (overlay
-                                                                 (rectangle SEGMENTSIZE PULLBACK "solid" SNAKECOLOR)
-                                                                 (rectangle PULLBACK SEGMENTSIZE "solid" SNAKECOLOR)))))))))
+    (overlay/align
+     "left" "bottom" CORNER
+     (overlay/align
+      "right" "bottom" CORNER
+      (overlay/align
+       "right" "top" CORNER
+       (overlay/align
+        "left" "top" CORNER
+        (overlay
+         (rectangle SEGMENTSIZE PULLBACK "solid" SNAKECOLOR)
+         (rectangle PULLBACK SEGMENTSIZE "solid" SNAKECOLOR))))))
+    (rectangle SEGMENTSIZE SPACER "solid" BACKGROUNDCOLOR))
+   (rectangle SPACER SEGMENTSIZE "solid" BACKGROUNDCOLOR)))
 (define FOOD (circle 7 "solid" "green"))
 (define CANVAS  (empty-scene CANVASWIDTH CANVASHEIGHT BACKGROUNDCOLOR))
 (define FIELDOFPLAY
@@ -186,8 +192,8 @@
   (cond
     [(member? pt sn)
      (random-point (make-point
-                    (* (+ (random (- NCELLSHORIZ 1)) 1) UNITCELLSIZE)
-                    (* (+ (random (- NCELLSVERT 1)) 1) UNITCELLSIZE)) sn)]
+                    (* (+ (random (- NCELLSHORIZ 1)) 5/4) UNITCELLSIZE)
+                    (* (+ (random (- NCELLSVERT 1)) 5/4) UNITCELLSIZE)) sn)]
     [else pt]))
 
 
